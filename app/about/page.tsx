@@ -60,7 +60,7 @@ export default async function AboutPage() {
 
           {/* Text */}
           <div className="lg:col-span-3 flex flex-col justify-center">
-            {bioParagraphs.map((para, i) => (
+            {bioParagraphs.map((para: string, i: number) => (
               <p
                 key={i}
                 className="text-off-white/90 text-base md:text-lg font-[family-name:var(--font-body)] leading-relaxed mb-5"

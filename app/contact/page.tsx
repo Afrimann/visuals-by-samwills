@@ -8,7 +8,7 @@ export const metadata = {
 
 async function getSettings() {
   const settings = await prisma.siteSetting.findMany();
-  return Object.fromEntries(settings.map((s) => [s.key, s.value]));
+  return Object.fromEntries(settings.map((s: { key: string; value: string }) => [s.key, s.value]));
 }
 
 const socialIcons = {
