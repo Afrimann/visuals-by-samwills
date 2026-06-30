@@ -11,9 +11,6 @@ export default async function CollaborationsPage() {
     orderBy: { sortOrder: "asc" },
   });
 
-  const logos = collaborations.filter((c) => !c.isFeatured);
-  const featured = collaborations.filter((c) => c.isFeatured);
-
   return (
     <div className="pt-24 pb-20 bg-cin-black min-h-screen">
       <div className="max-w-[1200px] mx-auto px-6 lg:px-10">
@@ -30,7 +27,7 @@ export default async function CollaborationsPage() {
 
         {/* Logo grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-20">
-          {collaborations.map((collab) => (
+          {collaborations.map((collab: (typeof collaborations)[number]) => (
             <div
               key={collab.id}
               className="bg-charcoal rounded-sm p-8 flex items-center justify-center group hover:bg-graphite transition-colors duration-300 border border-smoke/30 hover:border-gold/30"
