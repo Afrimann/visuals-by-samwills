@@ -3,13 +3,25 @@ import StatsCounter from "@/components/StatsCounter";
 import Link from "next/link";
 
 export const metadata = {
-  title: "About — Visuals by Samwills",
-  description: "The person behind the lens. Meet Samwills, cinematographer and visual storyteller.",
+  title: "About",
+  description:
+    "Meet Samwills — cinematographer and visual storyteller based in Lagos, Nigeria. The person behind the lens.",
+  openGraph: {
+    title: "About Samwills",
+    description: "Cinematographer and visual storyteller based in Lagos, Nigeria.",
+    url: "/about",
+  },
+  twitter: {
+    title: "About Samwills",
+    description: "Cinematographer and visual storyteller based in Lagos, Nigeria.",
+  },
 };
 
 async function getSettings() {
   const settings = await prisma.siteSetting.findMany();
-  return Object.fromEntries(settings.map((s: { key: string; value: string }) => [s.key, s.value]));
+  return Object.fromEntries(
+    settings.map((s: { key: string; value: string }) => [s.key, s.value]),
+  );
 }
 
 export default async function AboutPage() {
@@ -22,7 +34,6 @@ export default async function AboutPage() {
   return (
     <div className="pt-24 pb-20 bg-cin-black min-h-screen">
       <div className="max-w-[1200px] mx-auto px-6 lg:px-10">
-
         {/* Hero section */}
         <div className="mb-16 md:mb-20">
           <p className="font-[family-name:var(--font-display)] italic text-gold text-sm tracking-widest uppercase mb-3">
@@ -44,8 +55,18 @@ export default async function AboutPage() {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
                   <div className="w-20 h-20 rounded-full border border-smoke mx-auto mb-4 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-smoke" fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                    <svg
+                      className="w-8 h-8 text-smoke"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                      />
                     </svg>
                   </div>
                   <p className="text-smoke text-xs tracking-widest uppercase font-[family-name:var(--font-accent)]">
@@ -74,7 +95,8 @@ export default async function AboutPage() {
         {/* Pull quote */}
         <div className="border-l-2 border-gold pl-8 mb-20">
           <p className="font-[family-name:var(--font-display)] italic text-2xl md:text-3xl text-off-white/80 leading-relaxed">
-            &ldquo;I believe every story deserves to be told beautifully — and I&apos;m here to make sure yours is.&rdquo;
+            &ldquo;I believe every story deserves to be told beautifully — and
+            I&apos;m here to make sure yours is.&rdquo;
           </p>
           <p className="text-gold text-sm mt-4 font-[family-name:var(--font-accent)] tracking-widest">
             — Samwills

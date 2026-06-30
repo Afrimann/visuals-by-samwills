@@ -1,8 +1,18 @@
 import { prisma } from "@/lib/prisma";
 
 export const metadata = {
-  title: "Collaborations — Visuals by Samwills",
-  description: "Brands and artists we've worked with.",
+  title: "Collaborations",
+  description:
+    "Brands and artists Samwills has worked with — from MTN to Burna Boy, Wizkid, and beyond.",
+  openGraph: {
+    title: "Collaborations",
+    description: "Brands and artists Samwills has worked with.",
+    url: "/collaborations",
+  },
+  twitter: {
+    title: "Collaborations",
+    description: "Brands and artists Samwills has worked with.",
+  },
 };
 
 export default async function CollaborationsPage() {

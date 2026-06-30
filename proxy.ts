@@ -14,7 +14,9 @@ export function proxy(request: NextRequest) {
   }
 
   // Block public routes until the site is live
-  if (!SITE_LIVE && !pathname.startsWith("/admin") && !pathname.startsWith("/api")) {
+  // Always allow robots.txt and sitemap.xml so search engines can find them
+  const isSeoRoute = pathname === "/robots.txt" || pathname === "/sitemap.xml";
+  if (!SITE_LIVE && !isSeoRoute && !pathname.startsWith("/admin") && !pathname.startsWith("/api")) {
     return NextResponse.redirect(new URL("/admin/sign-in", request.url));
   }
 

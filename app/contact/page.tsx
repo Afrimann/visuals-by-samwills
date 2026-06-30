@@ -2,8 +2,18 @@ import { prisma } from "@/lib/prisma";
 import ContactForm from "@/components/ContactForm";
 
 export const metadata = {
-  title: "Contact — Visuals by Samwills",
-  description: "Get in touch to book a shoot or discuss your project.",
+  title: "Contact",
+  description:
+    "Get in touch to book a shoot or discuss your project. Based in Lagos — available nationwide and internationally.",
+  openGraph: {
+    title: "Contact Samwills",
+    description: "Book a shoot or discuss your project with Samwills.",
+    url: "/contact",
+  },
+  twitter: {
+    title: "Contact Samwills",
+    description: "Book a shoot or discuss your project with Samwills.",
+  },
 };
 
 async function getSettings() {

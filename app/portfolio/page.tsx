@@ -2,8 +2,18 @@ import { prisma } from "@/lib/prisma";
 import PortfolioGrid from "@/components/PortfolioGrid";
 
 export const metadata = {
-  title: "Portfolio — Visuals by Samwills",
-  description: "Music videos, wedding reels, short reels, documentaries, and commercials.",
+  title: "Portfolio",
+  description:
+    "Browse Samwills' work — music videos, wedding reels, short reels, documentaries, and commercials shot across Nigeria.",
+  openGraph: {
+    title: "Portfolio",
+    description: "Browse Samwills' cinematic work across music, weddings, docs & more.",
+    url: "/portfolio",
+  },
+  twitter: {
+    title: "Portfolio",
+    description: "Browse Samwills' cinematic work across music, weddings, docs & more.",
+  },
 };
 
 async function getData() {

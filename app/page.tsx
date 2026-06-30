@@ -1,7 +1,23 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import StatsCounter from "@/components/StatsCounter";
 import HeroReel from "@/components/HeroReel";
+
+export const metadata: Metadata = {
+  title: "Visuals by Samwills",
+  description:
+    "Cinematic videography based in Lagos, Nigeria. Music videos, wedding reels, documentaries, commercials — every frame tells your story.",
+  openGraph: {
+    title: "Visuals by Samwills",
+    description: "Every frame tells your story.",
+    url: "/",
+  },
+  twitter: {
+    title: "Visuals by Samwills",
+    description: "Every frame tells your story.",
+  },
+};
 
 async function getSettings() {
   const settings = await prisma.siteSetting.findMany();
