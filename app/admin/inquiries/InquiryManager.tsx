@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Submission {
   id: string;
@@ -24,13 +24,66 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 
 const FILTERS = ["ALL", "NEW", "READ", "REPLIED", "ARCHIVED"] as const;
 
+async function fetchSubmissions(): Promise<Submission[]> {
+  const res = await fetch("/api/contact");
+  if (!res.ok) throw new Error("Failed to fetch inquiries");
+  return res.json();
+}
+
 export default function InquiryManager({ initialSubmissions }: { initialSubmissions: Submission[] }) {
-  const router = useRouter();
-  const [submissions, setSubmissions] = useState(initialSubmissions);
+  const queryClient = useQueryClient();
+
+  const { data: submissions = [] } = useQuery({
+    queryKey: ["admin-inquiries"],
+    queryFn: fetchSubmissions,
+    initialData: initialSubmissions,
+    initialDataUpdatedAt: Date.now(),
+  });
+
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState<string | null>(null);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("ALL");
+
+  function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ["admin-inquiries"] });
+  }
+
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const res = await fetch(`/api/contact/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error("Failed to update status");
+      return res.json();
+    },
+    onSuccess: () => invalidate(),
+  });
+
+  const notesMutation = useMutation({
+    mutationFn: async ({ id, adminNotes }: { id: string; adminNotes: string }) => {
+      const res = await fetch(`/api/contact/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminNotes }),
+      });
+      if (!res.ok) throw new Error("Failed to save notes");
+      return res.json();
+    },
+    onSuccess: () => invalidate(),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/contact/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+    },
+    onSuccess: (_, id) => {
+      if (expandedId === id) setExpandedId(null);
+      invalidate();
+    },
+  });
 
   const filtered = filter === "ALL" ? submissions : submissions.filter((s) => s.status === filter);
 
@@ -38,67 +91,17 @@ export default function InquiryManager({ initialSubmissions }: { initialSubmissi
     return f === "ALL" ? submissions.length : submissions.filter((s) => s.status === f).length;
   }
 
-  function toggleExpand(id: string, current: Submission) {
-    if (expandedId === id) {
-      setExpandedId(null);
-      return;
-    }
-    setExpandedId(id);
-    setNotes((prev) => ({ ...prev, [id]: current.adminNotes ?? "" }));
-    // Auto-mark as READ when opened if still NEW
-    if (current.status === "NEW") {
-      updateStatus(id, "READ");
-    }
-  }
-
-  async function updateStatus(id: string, status: string) {
-    setSaving(id);
-    const res = await fetch(`/api/contact/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    if (res.ok) {
-      setSubmissions((prev) =>
-        prev.map((s: Submission) => (s.id === id ? { ...s, status } : s))
-      );
-      router.refresh();
-    }
-    setSaving(null);
-  }
-
-  async function saveNotes(id: string) {
-    setSaving(id);
-    const res = await fetch(`/api/contact/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ adminNotes: notes[id] ?? "" }),
-    });
-    if (res.ok) {
-      setSubmissions((prev) =>
-        prev.map((s: Submission) => (s.id === id ? { ...s, adminNotes: notes[id] ?? "" } : s))
-      );
-    }
-    setSaving(null);
-  }
-
-  async function handleDelete(id: string) {
-    if (!confirm("Delete this inquiry? This cannot be undone.")) return;
-    const res = await fetch(`/api/contact/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setSubmissions((prev) => prev.filter((s: Submission) => s.id !== id));
-      if (expandedId === id) setExpandedId(null);
-      router.refresh();
-    }
+  function toggleExpand(sub: Submission) {
+    if (expandedId === sub.id) { setExpandedId(null); return; }
+    setExpandedId(sub.id);
+    setNotes((prev) => ({ ...prev, [sub.id]: sub.adminNotes ?? "" }));
+    if (sub.status === "NEW") statusMutation.mutate({ id: sub.id, status: "READ" });
   }
 
   function formatDate(d: Date | string) {
     return new Date(d).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      day: "numeric", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
     });
   }
 
@@ -120,7 +123,6 @@ export default function InquiryManager({ initialSubmissions }: { initialSubmissi
         ))}
       </div>
 
-      {/* List */}
       {filtered.length === 0 ? (
         <div className="bg-charcoal border border-smoke/40 rounded-sm py-14 text-center">
           <p className="text-silver text-sm font-[family-name:var(--font-body)]">No inquiries yet.</p>
@@ -138,18 +140,15 @@ export default function InquiryManager({ initialSubmissions }: { initialSubmissi
                   isOpen ? "border-gold/30" : "border-smoke/40 hover:border-smoke/70"
                 }`}
               >
-                {/* Row header — always visible */}
                 <button
-                  onClick={() => toggleExpand(sub.id, sub)}
+                  onClick={() => toggleExpand(sub)}
                   className="w-full text-left px-5 py-4 flex items-start gap-4"
                 >
-                  {/* Status dot */}
                   <span
                     className={`mt-1 shrink-0 w-2 h-2 rounded-full ${
                       sub.status === "NEW" ? "bg-gold" : sub.status === "REPLIED" ? "bg-green-400" : "bg-smoke"
                     }`}
                   />
-
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 flex-wrap mb-0.5">
                       <span className="text-off-white text-sm font-[family-name:var(--font-body)] font-medium">
@@ -166,28 +165,21 @@ export default function InquiryManager({ initialSubmissions }: { initialSubmissi
                       {sub.message}
                     </p>
                   </div>
-
                   <div className="flex items-center gap-3 shrink-0">
-                    <span
-                      className={`text-[10px] tracking-widest uppercase px-2 py-0.5 rounded-full border font-[family-name:var(--font-accent)] ${cfg.className}`}
-                    >
+                    <span className={`text-[10px] tracking-widest uppercase px-2 py-0.5 rounded-full border font-[family-name:var(--font-accent)] ${cfg.className}`}>
                       {cfg.label}
                     </span>
                     <span className="text-smoke text-xs font-[family-name:var(--font-body)] hidden sm:block">
                       {formatDate(sub.createdAt)}
                     </span>
-                    <span
-                      className={`text-smoke text-xs transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-                    >
+                    <span className={`text-smoke text-xs transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}>
                       ▾
                     </span>
                   </div>
                 </button>
 
-                {/* Expanded detail */}
                 {isOpen && (
                   <div className="border-t border-smoke/40 px-5 pb-5 pt-4">
-                    {/* Contact info */}
                     <div className="flex flex-wrap gap-4 mb-5 text-xs font-[family-name:var(--font-body)]">
                       <div>
                         <span className="text-smoke uppercase tracking-widest font-[family-name:var(--font-accent)]">Email</span>
@@ -209,21 +201,15 @@ export default function InquiryManager({ initialSubmissions }: { initialSubmissi
                       </div>
                     </div>
 
-                    {/* Message */}
                     <div className="mb-5">
-                      <p className="text-[10px] tracking-widest uppercase text-smoke font-[family-name:var(--font-accent)] mb-2">
-                        Message
-                      </p>
+                      <p className="text-[10px] tracking-widest uppercase text-smoke font-[family-name:var(--font-accent)] mb-2">Message</p>
                       <p className="text-off-white/90 text-sm font-[family-name:var(--font-body)] leading-relaxed whitespace-pre-wrap bg-graphite rounded-sm px-4 py-3">
                         {sub.message}
                       </p>
                     </div>
 
-                    {/* Admin notes */}
                     <div className="mb-5">
-                      <p className="text-[10px] tracking-widest uppercase text-smoke font-[family-name:var(--font-accent)] mb-2">
-                        Notes
-                      </p>
+                      <p className="text-[10px] tracking-widest uppercase text-smoke font-[family-name:var(--font-accent)] mb-2">Notes</p>
                       <textarea
                         rows={2}
                         value={notes[sub.id] ?? sub.adminNotes ?? ""}
@@ -232,24 +218,21 @@ export default function InquiryManager({ initialSubmissions }: { initialSubmissi
                         className="w-full bg-graphite border border-smoke rounded-sm px-3 py-2 text-silver text-sm font-[family-name:var(--font-body)] focus:outline-none focus:border-gold resize-none transition-colors"
                       />
                       <button
-                        onClick={() => saveNotes(sub.id)}
-                        disabled={saving === sub.id}
+                        onClick={() => notesMutation.mutate({ id: sub.id, adminNotes: notes[sub.id] ?? "" })}
+                        disabled={notesMutation.isPending}
                         className="mt-1.5 text-xs text-silver hover:text-gold transition-colors font-[family-name:var(--font-body)] disabled:opacity-50"
                       >
-                        {saving === sub.id ? "Saving…" : "Save notes"}
+                        {notesMutation.isPending ? "Saving…" : "Save notes"}
                       </button>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] tracking-widest uppercase text-smoke font-[family-name:var(--font-accent)] mr-1">
-                        Mark as
-                      </span>
+                      <span className="text-[10px] tracking-widest uppercase text-smoke font-[family-name:var(--font-accent)] mr-1">Mark as</span>
                       {(["NEW", "READ", "REPLIED", "ARCHIVED"] as const).map((s) => (
                         <button
                           key={s}
-                          onClick={() => updateStatus(sub.id, s)}
-                          disabled={sub.status === s || saving === sub.id}
+                          onClick={() => statusMutation.mutate({ id: sub.id, status: s })}
+                          disabled={sub.status === s || statusMutation.isPending}
                           className={`text-xs px-3 py-1 border rounded transition-colors font-[family-name:var(--font-accent)] tracking-widest uppercase disabled:opacity-40 disabled:cursor-default ${
                             sub.status === s
                               ? STATUS_CONFIG[s].className + " border"
@@ -259,19 +242,21 @@ export default function InquiryManager({ initialSubmissions }: { initialSubmissi
                           {STATUS_CONFIG[s].label}
                         </button>
                       ))}
-
                       <a
                         href={`mailto:${sub.email}?subject=Re: ${sub.projectType ?? "Your inquiry"}`}
                         className="ml-auto text-xs px-3 py-1 bg-gold text-cin-black font-[family-name:var(--font-body)] tracking-widest uppercase hover:bg-pale-gold transition-colors"
                       >
                         Reply ↗
                       </a>
-
                       <button
-                        onClick={() => handleDelete(sub.id)}
-                        className="text-xs text-silver hover:text-red-400 transition-colors font-[family-name:var(--font-body)]"
+                        onClick={() => {
+                          if (confirm("Delete this inquiry? This cannot be undone."))
+                            deleteMutation.mutate(sub.id);
+                        }}
+                        disabled={deleteMutation.isPending}
+                        className="text-xs text-silver hover:text-red-400 transition-colors font-[family-name:var(--font-body)] disabled:opacity-50"
                       >
-                        Delete
+                        {deleteMutation.isPending ? "Deleting…" : "Delete"}
                       </button>
                     </div>
                   </div>

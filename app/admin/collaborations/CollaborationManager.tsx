@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 
 interface Collaboration {
@@ -13,20 +13,73 @@ interface Collaboration {
   sortOrder: number;
 }
 
+async function fetchCollabs(): Promise<Collaboration[]> {
+  const res = await fetch("/api/collaborations");
+  if (!res.ok) throw new Error("Failed to fetch collaborations");
+  return res.json();
+}
+
+const emptyForm = { name: "", logoUrl: "", websiteUrl: "", description: "", sortOrder: 0 };
+
 export default function CollaborationManager({
   initialCollabs,
 }: {
   initialCollabs: Collaboration[];
 }) {
-  const router = useRouter();
-  const [collabs, setCollabs] = useState(initialCollabs);
+  const queryClient = useQueryClient();
+
+  const { data: collabs = [] } = useQuery({
+    queryKey: ["admin-collabs"],
+    queryFn: fetchCollabs,
+    initialData: initialCollabs,
+    initialDataUpdatedAt: Date.now(),
+  });
+
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const emptyForm = { name: "", logoUrl: "", websiteUrl: "", description: "", sortOrder: 0 };
   const [formData, setFormData] = useState(emptyForm);
+
+  function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ["admin-collabs"] });
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const method = editingId ? "PATCH" : "POST";
+      const url = editingId ? `/api/collaborations/${editingId}` : "/api/collaborations";
+      const payload = {
+        name: formData.name,
+        logoUrl: formData.logoUrl || null,
+        websiteUrl: formData.websiteUrl || null,
+        description: formData.description || null,
+        sortOrder: formData.sortOrder,
+      };
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Something went wrong");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      invalidate();
+      cancel();
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/collaborations/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+    },
+    onSuccess: () => invalidate(),
+  });
 
   function startEdit(c: Collaboration) {
     setEditingId(c.id);
@@ -52,52 +105,12 @@ export default function CollaborationManager({
     setError("");
   }
 
-  async function handleSave() {
-    if (!formData.name.trim()) { setError("Name is required"); return; }
-    setLoading(true);
-    setError("");
-
-    const method = editingId ? "PATCH" : "POST";
-    const url = editingId ? `/api/collaborations/${editingId}` : "/api/collaborations";
-
-    const payload = {
-      name: formData.name,
-      logoUrl: formData.logoUrl || null,
-      websiteUrl: formData.websiteUrl || null,
-      description: formData.description || null,
-      sortOrder: formData.sortOrder,
-    };
-
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (res.ok) {
-      router.refresh();
-      const data: Collaboration = await res.json();
-      if (editingId) {
-        setCollabs(collabs.map((c) => (c.id === editingId ? data : c)));
-      } else {
-        setCollabs([...collabs, data]);
-      }
-      cancel();
-    } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Something went wrong");
-    }
-    setLoading(false);
-  }
-
-  async function handleDelete(id: string, name: string) {
+  function handleDelete(id: string, name: string) {
     if (!confirm(`Remove "${name}" from collaborations?`)) return;
-    const res = await fetch(`/api/collaborations/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setCollabs(collabs.filter((c) => c.id !== id));
-      router.refresh();
-    }
+    deleteMutation.mutate(id);
   }
+
+  const loading = saveMutation.isPending;
 
   return (
     <div className="flex flex-col gap-3">
@@ -110,7 +123,7 @@ export default function CollaborationManager({
                 setFormData={setFormData}
                 error={error}
                 loading={loading}
-                onSave={handleSave}
+                onSave={() => saveMutation.mutate()}
                 onCancel={cancel}
                 isEdit
               />
@@ -157,9 +170,10 @@ export default function CollaborationManager({
               </button>
               <button
                 onClick={() => handleDelete(c.id, c.name)}
-                className="text-xs text-silver hover:text-red-400 transition-colors font-[family-name:var(--font-body)]"
+                disabled={deleteMutation.isPending}
+                className="text-xs text-silver hover:text-red-400 transition-colors font-[family-name:var(--font-body)] disabled:opacity-40"
               >
-                Delete
+                {deleteMutation.isPending ? "…" : "Delete"}
               </button>
             </div>
           )}
@@ -176,7 +190,7 @@ export default function CollaborationManager({
             setFormData={setFormData}
             error={error}
             loading={loading}
-            onSave={handleSave}
+            onSave={() => saveMutation.mutate()}
             onCancel={cancel}
             isEdit={false}
           />
@@ -283,7 +297,7 @@ function CollabForm({
           disabled={loading}
           className="px-5 py-2 bg-gold text-cin-black text-xs tracking-widest uppercase font-[family-name:var(--font-body)] hover:bg-pale-gold transition-colors disabled:opacity-60"
         >
-          {loading ? "Saving..." : isEdit ? "Save Changes" : "Add Collaboration"}
+          {loading ? "Saving…" : isEdit ? "Save Changes" : "Add Collaboration"}
         </button>
         <button
           onClick={onCancel}

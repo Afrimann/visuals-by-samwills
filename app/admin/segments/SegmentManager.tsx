@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Segment {
   id: string;
@@ -24,19 +24,68 @@ const PRESET_COLORS = [
   { label: "Cyan", value: "#06b6d4" },
 ];
 
+async function fetchSegments(): Promise<Segment[]> {
+  const res = await fetch("/api/segments");
+  if (!res.ok) throw new Error("Failed to fetch segments");
+  return res.json();
+}
+
 export default function SegmentManager({ initialSegments }: { initialSegments: Segment[] }) {
-  const router = useRouter();
-  const [segments, setSegments] = useState(initialSegments);
+  const queryClient = useQueryClient();
+
+  const { data: segments = [] } = useQuery({
+    queryKey: ["admin-segments"],
+    queryFn: fetchSegments,
+    initialData: initialSegments,
+    initialDataUpdatedAt: Date.now(),
+  });
+
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     accentColor: "#c9a84c",
     sortOrder: 0,
+  });
+
+  function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ["admin-segments"] });
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const method = editingId ? "PATCH" : "POST";
+      const url = editingId ? `/api/segments/${editingId}` : "/api/segments";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Something went wrong");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      invalidate();
+      cancel();
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/segments/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Delete failed");
+      }
+    },
+    onSuccess: () => invalidate(),
+    onError: (err: Error) => alert(err.message),
   });
 
   function startEdit(seg: Segment) {
@@ -62,58 +111,18 @@ export default function SegmentManager({ initialSegments }: { initialSegments: S
     setError("");
   }
 
-  async function handleSave() {
-    if (!formData.name.trim()) { setError("Name is required"); return; }
-    setLoading(true);
-    setError("");
-
-    const method = editingId ? "PATCH" : "POST";
-    const url = editingId ? `/api/segments/${editingId}` : "/api/segments";
-
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-
-    if (res.ok) {
-      router.refresh();
-      const data = await res.json();
-      if (editingId) {
-        setSegments(segments.map((s) => (s.id === editingId ? { ...s, ...data } : s)));
-      } else {
-        setSegments([...segments, { ...data, _count: { videos: 0 } }]);
-      }
-      cancel();
-    } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Something went wrong");
-    }
-    setLoading(false);
-  }
-
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Delete segment "${name}"?`)) return;
-    const res = await fetch(`/api/segments/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setSegments(segments.filter((s) => s.id !== id));
-      router.refresh();
-    } else {
-      const data = await res.json().catch(() => ({}));
-      alert(data.error ?? "Delete failed");
-    }
+    deleteMutation.mutate(id);
   }
 
   const isEditing = (id: string) => editingId === id;
+  const loading = saveMutation.isPending;
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Existing segments */}
       {segments.map((seg) => (
-        <div
-          key={seg.id}
-          className="bg-charcoal border border-smoke/40 rounded-sm"
-        >
+        <div key={seg.id} className="bg-charcoal border border-smoke/40 rounded-sm">
           {isEditing(seg.id) ? (
             <div className="p-5">
               <SegmentForm
@@ -121,7 +130,7 @@ export default function SegmentManager({ initialSegments }: { initialSegments: S
                 setFormData={setFormData}
                 error={error}
                 loading={loading}
-                onSave={handleSave}
+                onSave={() => saveMutation.mutate()}
                 onCancel={cancel}
                 isEdit
               />
@@ -151,18 +160,17 @@ export default function SegmentManager({ initialSegments }: { initialSegments: S
               </button>
               <button
                 onClick={() => handleDelete(seg.id, seg.name)}
-                disabled={seg._count.videos > 0}
+                disabled={seg._count.videos > 0 || deleteMutation.isPending}
                 className="text-xs text-silver hover:text-red-400 transition-colors font-[family-name:var(--font-body)] disabled:opacity-30 disabled:cursor-not-allowed"
                 title={seg._count.videos > 0 ? "Remove all videos first" : "Delete"}
               >
-                Delete
+                {deleteMutation.isPending ? "…" : "Delete"}
               </button>
             </div>
           )}
         </div>
       ))}
 
-      {/* New segment form */}
       {showForm && (
         <div className="bg-charcoal border border-gold/30 rounded-sm p-5">
           <p className="text-xs tracking-widest uppercase text-gold font-[family-name:var(--font-accent)] mb-4">
@@ -173,7 +181,7 @@ export default function SegmentManager({ initialSegments }: { initialSegments: S
             setFormData={setFormData}
             error={error}
             loading={loading}
-            onSave={handleSave}
+            onSave={() => saveMutation.mutate()}
             onCancel={cancel}
             isEdit={false}
           />
@@ -284,7 +292,7 @@ function SegmentForm({
           disabled={loading}
           className="px-5 py-2 bg-gold text-cin-black text-xs tracking-widest uppercase font-[family-name:var(--font-body)] hover:bg-pale-gold transition-colors disabled:opacity-60"
         >
-          {loading ? "Saving..." : isEdit ? "Save Changes" : "Create Segment"}
+          {loading ? "Saving…" : isEdit ? "Save Changes" : "Create Segment"}
         </button>
         <button
           onClick={onCancel}

@@ -4,7 +4,10 @@ import { requireAdmin } from "@/lib/auth";
 import { toSlug } from "@/lib/video";
 
 export async function GET() {
-  const segments = await prisma.segment.findMany({ orderBy: { sortOrder: "asc" } });
+  const segments = await prisma.segment.findMany({
+    orderBy: { sortOrder: "asc" },
+    include: { _count: { select: { videos: true } } },
+  });
   return NextResponse.json(segments);
 }
 
