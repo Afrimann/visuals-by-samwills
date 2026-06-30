@@ -19,7 +19,7 @@ export default async function AdminDashboard() {
     { label: "Total Videos", value: videoCount, href: "/admin/videos" },
     { label: "Segments", value: segmentCount, href: "/admin/segments" },
     { label: "Collaborations", value: collabCount, href: "/admin/collaborations" },
-    { label: "New Inquiries", value: newInquiries, href: "#" },
+    { label: "New Inquiries", value: newInquiries, href: "/admin/inquiries" },
   ];
 
   return (

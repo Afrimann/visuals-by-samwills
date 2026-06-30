@@ -10,6 +10,7 @@ const tabs = [
   { href: "/admin/videos", label: "Videos" },
   { href: "/admin/segments", label: "Segments" },
   { href: "/admin/collaborations", label: "Collaborations" },
+  { href: "/admin/inquiries", label: "Inquiries" },
 ];
 
 export default function AdminNav() {

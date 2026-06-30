@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+function isAdmin(req: NextRequest) {
+  return req.cookies.get("admin_session")?.value === "authenticated";
+}
+
+export async function GET(req: NextRequest) {
+  if (!isAdmin(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const submissions = await prisma.contactSubmission.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json(submissions);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
