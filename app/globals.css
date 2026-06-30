@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* ── Cinematic Color Palette ── */
+  --color-cin-black: #0a0a0a;
+  --color-charcoal: #141414;
+  --color-graphite: #1f1f1f;
+  --color-smoke: #3a3a3a;
+  --color-gold: #c9a84c;
+  --color-pale-gold: #e8d5a3;
+  --color-off-white: #f2f0ec;
+  --color-silver: #8a8a8a;
+
+  /* ── Segment Accent Colors ── */
+  --color-seg-music: #8b5cf6;
+  --color-seg-reels: #ec4899;
+  --color-seg-wedding: #f59e0b;
+  --color-seg-doc: #10b981;
+  --color-seg-commercial: #3b82f6;
+
+  /* ── Typography ── */
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+  --font-accent: "Space Grotesk", monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background-color: #0a0a0a;
+  color: #f2f0ec;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+  background-color: #0a0a0a;
+  color: #f2f0ec;
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c9a84c;
+}
+
+/* Selection */
+::selection {
+  background: #c9a84c;
+  color: #0a0a0a;
+}
+
+/* Video iframe */
+iframe {
+  border: none;
 }

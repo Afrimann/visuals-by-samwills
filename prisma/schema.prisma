@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Segment {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  accentColor String   @default("#C9A84C")
+  sortOrder   Int      @default(0)
+  isVisible   Boolean  @default(true)
+  videos      Video[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([isVisible, sortOrder])
+}
+
+model Video {
+  id           String      @id @default(cuid())
+  title        String
+  slug         String      @unique
+  description  String?
+  segmentId    String
+  segment      Segment     @relation(fields: [segmentId], references: [id], onDelete: Restrict)
+  videoUrl     String
+  embedUrl     String?
+  thumbnailUrl String?
+  tags         String      @default("[]")
+  year         Int?
+  clientName   String?
+  status       VideoStatus @default(DRAFT)
+  isFeatured   Boolean     @default(false)
+  sortOrder    Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([segmentId, status, sortOrder])
+  @@index([slug])
+  @@index([isFeatured, status])
+}
+
+enum VideoStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Collaboration {
+  id          String   @id @default(cuid())
+  name        String
+  logoUrl     String?
+  websiteUrl  String?
+  description String?
+  isFeatured  Boolean  @default(false)
+  isVisible   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isVisible, sortOrder])
+}
+
+model ContactSubmission {
+  id          String        @id @default(cuid())
+  name        String
+  email       String
+  phone       String?
+  projectType String?
+  message     String
+  status      InquiryStatus @default(NEW)
+  adminNotes  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status, createdAt])
+}
+
+enum InquiryStatus {
+  NEW
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+model SiteSetting {
+  key       String   @id
+  value     String
+  label     String?
+  updatedAt DateTime @updatedAt
+}

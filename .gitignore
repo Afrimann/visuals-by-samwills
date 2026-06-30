@@ -12,6 +12,11 @@
 
 # testing
 /coverage
+/__tests__
+
+# database
+prisma/dev.db
+prisma/*.db-journal
 
 # next.js
 /.next/
