@@ -46,7 +46,7 @@ export default async function AdminVideosPage() {
           <span>Actions</span>
         </div>
 
-        {videos.map((v, i) => (
+        {videos.map((v: (typeof videos)[number], i: number) => (
           <div
             key={v.id}
             className={`grid grid-cols-[60px_1fr_140px_100px_100px] gap-4 px-5 py-3 items-center ${

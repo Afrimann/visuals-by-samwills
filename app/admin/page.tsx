@@ -73,7 +73,7 @@ export default async function AdminDashboard() {
           Recent Videos
         </h2>
         <div className="bg-charcoal border border-smoke/40 rounded-sm overflow-hidden">
-          {recentVideos.map((v, i) => (
+          {recentVideos.map((v: (typeof recentVideos)[number], i: number) => (
             <Link
               key={v.id}
               href={`/admin/videos/${v.id}`}
