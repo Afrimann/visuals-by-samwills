@@ -2,7 +2,10 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 import { getEmbedUrl, getYouTubeThumbnail, toSlug } from "../lib/video";
 
-const adapter = new PrismaLibSql({ url: "file:prisma/dev.db" });
+const adapter = new PrismaLibSql({
+  url: process.env.TURSO_DATABASE_URL ?? "file:prisma/dev.db",
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
 const prisma = new PrismaClient({ adapter });
 
 const segments = [
