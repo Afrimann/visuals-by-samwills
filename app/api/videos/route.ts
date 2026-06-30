@@ -4,6 +4,25 @@ import { isAdminAuthenticated } from "@/lib/auth";
 import { getEmbedUrl, getYouTubeThumbnail, toSlug } from "@/lib/video";
 
 export async function GET() {
+  const authed = await isAdminAuthenticated();
+
+  if (authed) {
+    const videos = await prisma.video.findMany({
+      orderBy: [{ segment: { sortOrder: "asc" } }, { sortOrder: "asc" }],
+      select: {
+        id: true,
+        title: true,
+        thumbnailUrl: true,
+        status: true,
+        isFeatured: true,
+        sortOrder: true,
+        createdAt: true,
+        segment: { select: { name: true, accentColor: true } },
+      },
+    });
+    return NextResponse.json(videos);
+  }
+
   const videos = await prisma.video.findMany({
     where: { status: "PUBLISHED" },
     select: {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 
 interface Segment {
@@ -29,9 +30,7 @@ interface Props {
 
 export default function VideoForm({ segments, initialData }: Props) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [deleting, setDeleting] = useState(false);
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
     title: initialData?.title ?? "",
@@ -47,41 +46,37 @@ export default function VideoForm({ segments, initialData }: Props) {
 
   const isEdit = !!initialData?.id;
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    const method = isEdit ? "PATCH" : "POST";
-    const url = isEdit ? `/api/videos/${initialData!.id}` : "/api/videos";
-
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-
-    if (res.ok) {
+  const saveMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const method = isEdit ? "PATCH" : "POST";
+      const url = isEdit ? `/api/videos/${initialData!.id}` : "/api/videos";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error ?? "Something went wrong");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-videos"] });
       router.push("/admin/videos");
-      router.refresh();
-    } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Something went wrong");
-      setLoading(false);
-    }
-  }
+    },
+  });
 
-  async function handleDelete() {
-    if (!confirm("Delete this video? This cannot be undone.")) return;
-    setDeleting(true);
-    const res = await fetch(`/api/videos/${initialData!.id}`, { method: "DELETE" });
-    if (res.ok) {
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/videos/${initialData!.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-videos"] });
       router.push("/admin/videos");
-      router.refresh();
-    } else {
-      setDeleting(false);
-    }
-  }
+    },
+  });
 
   // Auto-generate YouTube thumbnail from URL
   const autoThumb = formData.videoUrl.includes("youtube") || formData.videoUrl.includes("youtu.be")
@@ -99,7 +94,10 @@ export default function VideoForm({ segments, initialData }: Props) {
   const previewThumb = formData.thumbnailUrl || autoThumb;
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <form
+      onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(formData); }}
+      className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+    >
       {/* Main fields */}
       <div className="lg:col-span-2 flex flex-col gap-5">
         {/* Title */}
@@ -191,17 +189,19 @@ export default function VideoForm({ segments, initialData }: Props) {
           />
         </div>
 
-        {error && (
-          <p className="text-red-400 text-sm font-[family-name:var(--font-body)]">{error}</p>
+        {saveMutation.error && (
+          <p className="text-red-400 text-sm font-[family-name:var(--font-body)]">
+            {(saveMutation.error as Error).message}
+          </p>
         )}
 
         <div className="flex items-center gap-3">
           <button
             type="submit"
-            disabled={loading}
+            disabled={saveMutation.isPending}
             className="px-6 py-3 bg-gold text-cin-black text-xs tracking-widest uppercase font-[family-name:var(--font-body)] hover:bg-pale-gold transition-colors disabled:opacity-60"
           >
-            {loading ? "Saving..." : isEdit ? "Save Changes" : "Add Video"}
+            {saveMutation.isPending ? "Saving..." : isEdit ? "Save Changes" : "Add Video"}
           </button>
           <button
             type="button"
@@ -295,11 +295,13 @@ export default function VideoForm({ segments, initialData }: Props) {
             </p>
             <button
               type="button"
-              onClick={handleDelete}
-              disabled={deleting}
+              onClick={() => {
+                if (confirm("Delete this video? This cannot be undone.")) deleteMutation.mutate();
+              }}
+              disabled={deleteMutation.isPending}
               className="w-full py-2.5 border border-red-800/50 text-red-500 text-xs tracking-widest uppercase font-[family-name:var(--font-body)] hover:border-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-60"
             >
-              {deleting ? "Deleting..." : "Delete Video"}
+              {deleteMutation.isPending ? "Deleting..." : "Delete Video"}
             </button>
           </div>
         )}
