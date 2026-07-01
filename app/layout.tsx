@@ -3,6 +3,8 @@ import { Cormorant_Garamond, DM_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import IntroProvider from "@/components/IntroProvider";
+import IntroSplash from "@/components/IntroSplash";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-display",
@@ -112,9 +114,12 @@ export default function RootLayout({
             }),
           }}
         />
-        <Nav />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <IntroProvider>
+          <Nav />
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <IntroSplash />
+        </IntroProvider>
       </body>
     </html>
   );

@@ -2,72 +2,96 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useState } from "react";
+import { useIntro } from "./IntroProvider";
 
-// Template: Cinematic showreel embed (muted autoplay loop)
-const SHOWREEL_EMBED =
-  "https://www.youtube.com/embed/2Vv-BfVoq4g?autoplay=1&mute=1&loop=1&playlist=2Vv-BfVoq4g&controls=0&showinfo=0&rel=0&modestbranding=1";
+// a_-90 corrects the source clip's baked-in 90° rotation and yields landscape output
+const SHOWREEL_SRC =
+  "https://res.cloudinary.com/dwgkfg8ec/video/upload/a_-90/v1782881483/samwills3_kaghpt.mp4";
 
 export default function HeroReel() {
-  const [muted, setMuted] = useState(true);
+  const { introComplete } = useIntro();
 
   return (
     <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden bg-cin-black">
-      {/* Video background */}
-      <div className="absolute inset-0 z-0">
-        <iframe
-          src={SHOWREEL_EMBED}
-          className="absolute w-[177.78vh] h-[100vh] min-w-full min-h-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-          allow="autoplay; fullscreen"
-          title="Visuals by Samwills Showreel"
-        />
-      </div>
+      {/* Video background — always muted; audio is handled by the site-wide music toggle */}
+      <video
+        className="absolute inset-0 z-0 w-full h-full object-cover"
+        src={SHOWREEL_SRC}
+        autoPlay
+        muted
+        loop
+        playsInline
+      />
 
       {/* Dark overlay */}
       <div className="absolute inset-0 z-10 bg-cin-black/60" />
 
+      {/* Opening curtain */}
+      <motion.div
+        initial={{ opacity: 1 }}
+        animate={{ opacity: introComplete ? 0 : 1 }}
+        transition={{ delay: 0.1, duration: 1, ease: "easeInOut" }}
+        className="absolute inset-0 z-30 bg-cin-black pointer-events-none"
+      />
+
       {/* Content */}
       <div className="relative z-20 text-center px-6 max-w-4xl mx-auto">
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.8 }}
-          className="font-[family-name:var(--font-display)] italic text-gold text-sm md:text-base tracking-[0.3em] uppercase mb-6"
+          initial={{ opacity: 0, filter: "blur(8px)", letterSpacing: "0.6em" }}
+          animate={
+            introComplete
+              ? { opacity: 1, filter: "blur(0px)", letterSpacing: "0.3em" }
+              : { opacity: 0, filter: "blur(8px)", letterSpacing: "0.6em" }
+          }
+          transition={{ delay: 0.6, duration: 1.1, ease: "easeOut" }}
+          className="font-[family-name:var(--font-display)] italic text-gold text-sm md:text-base uppercase mb-6"
         >
           Cinematography · Storytelling · Motion
         </motion.p>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="font-[family-name:var(--font-display)] text-5xl md:text-7xl lg:text-8xl font-light text-off-white leading-none tracking-tight mb-3"
-        >
-          VISUALS
-        </motion.h1>
+        <div className="overflow-hidden">
+          <motion.h1
+            initial={{ y: "110%" }}
+            animate={{ y: introComplete ? "0%" : "110%" }}
+            transition={{ delay: 1, duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+            className="font-[family-name:var(--font-display)] text-5xl md:text-7xl lg:text-8xl font-light text-off-white leading-none tracking-tight mb-3"
+          >
+            VISUALS
+          </motion.h1>
+        </div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1, duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="font-[family-name:var(--font-display)] text-5xl md:text-7xl lg:text-8xl font-light text-gold leading-none tracking-tight mb-8"
-        >
-          BY SAMWILLS
-        </motion.h1>
+        <div className="overflow-hidden">
+          <motion.h1
+            initial={{ y: "110%" }}
+            animate={{ y: introComplete ? "0%" : "110%" }}
+            transition={{ delay: 1.2, duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+            className="font-[family-name:var(--font-display)] text-5xl md:text-7xl lg:text-8xl font-light text-gold leading-none tracking-tight mb-8"
+          >
+            BY SAMWILLS
+          </motion.h1>
+        </div>
 
         <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.4, duration: 0.8 }}
+          initial={{ opacity: 0, filter: "blur(6px)" }}
+          animate={
+            introComplete
+              ? { opacity: 1, filter: "blur(0px)" }
+              : { opacity: 0, filter: "blur(6px)" }
+          }
+          transition={{ delay: 1.8, duration: 0.9, ease: "easeOut" }}
           className="text-silver text-base md:text-lg font-[family-name:var(--font-body)] mb-10 tracking-wide"
         >
           Every frame tells your story.
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.7, duration: 0.8 }}
+          initial={{ opacity: 0, y: 20, filter: "blur(6px)" }}
+          animate={
+            introComplete
+              ? { opacity: 1, y: 0, filter: "blur(0px)" }
+              : { opacity: 0, y: 20, filter: "blur(6px)" }
+          }
+          transition={{ delay: 2.1, duration: 0.9, ease: "easeOut" }}
           className="flex items-center justify-center gap-5 flex-wrap"
         >
           <Link
@@ -85,11 +109,11 @@ export default function HeroReel() {
         </motion.div>
       </div>
 
-      {/* Scroll indicator */}
+      {/* Scroll indicator
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2.2, duration: 0.8 }}
+        animate={{ opacity: introComplete ? 1 : 0 }}
+        transition={{ delay: 2.5, duration: 0.8 }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2"
       >
         <span className="text-[10px] text-silver tracking-widest uppercase font-[family-name:var(--font-accent)]">
@@ -100,24 +124,7 @@ export default function HeroReel() {
           transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
           className="w-px h-8 bg-gradient-to-b from-silver to-transparent"
         />
-      </motion.div>
-
-      {/* Mute toggle */}
-      <button
-        onClick={() => setMuted(!muted)}
-        className="absolute bottom-8 right-6 z-20 w-9 h-9 rounded-full border border-silver/30 flex items-center justify-center text-silver hover:text-gold hover:border-gold transition-colors duration-300"
-        aria-label={muted ? "Unmute" : "Mute"}
-      >
-        {muted ? (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 011.28.531V19.94a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.506-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.395C2.806 8.757 3.63 8.25 4.51 8.25H6.75z" />
-          </svg>
-        ) : (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.395C2.806 8.757 3.63 8.25 4.51 8.25H6.75z" />
-          </svg>
-        )}
-      </button>
+      </motion.div> */}
     </section>
   );
 }

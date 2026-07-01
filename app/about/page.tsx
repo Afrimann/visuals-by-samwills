@@ -49,31 +49,17 @@ export default async function AboutPage() {
 
         {/* Bio */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 md:gap-16 mb-20">
-          {/* Placeholder portrait */}
+          {/* Portrait video */}
           <div className="lg:col-span-2">
             <div className="aspect-[3/4] bg-charcoal rounded-sm relative overflow-hidden">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-20 h-20 rounded-full border border-smoke mx-auto mb-4 flex items-center justify-center">
-                    <svg
-                      className="w-8 h-8 text-smoke"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-smoke text-xs tracking-widest uppercase font-[family-name:var(--font-accent)]">
-                    Samwills
-                  </p>
-                </div>
-              </div>
+              <video
+                className="absolute inset-0 w-full h-full object-cover"
+                src="https://res.cloudinary.com/dwgkfg8ec/video/upload/v1782880290/samwills2_sgx1sf.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
               {/* Subtle gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-cin-black/30 to-transparent" />
             </div>

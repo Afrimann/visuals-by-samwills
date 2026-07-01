@@ -1,4 +1,5 @@
 import Link from "next/link";
+import FooterReel from "@/components/FooterReel";
 
 const socials = [
   { label: "Instagram", handle: "@visualsbysamwills", href: "https://instagram.com/visualsbysamwills" },
@@ -16,8 +17,14 @@ const navLinks = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-smoke/40 bg-charcoal">
-      <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-14">
+    <footer className="relative border-t border-smoke/40 bg-charcoal overflow-hidden">
+      {/* Autoplay video background */}
+      <FooterReel />
+
+      {/* Dark overlay for legibility */}
+      <div className="absolute inset-0 z-10 bg-cin-black/85" />
+
+      <div className="relative z-20 max-w-[1200px] mx-auto px-6 lg:px-10 py-14">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6">
           {/* Brand */}
           <div>
